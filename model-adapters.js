@@ -1,0 +1,101 @@
+const DEFAULT_RESPONSE_SELECTORS = [
+  '.markdown',
+  '.markdown-body',
+  '.prose',
+  '[class*="markdown"]',
+];
+
+const MODEL_ADAPTERS = Object.freeze({
+  chatgpt: Object.freeze({
+    label: 'ChatGPT',
+    url: 'https://chatgpt.com',
+    newChatUrl: 'https://chatgpt.com/',
+    sendStrategy: 'chatgpt',
+    composerSelectors: ['#prompt-textarea', '[contenteditable="true"][data-placeholder]', 'div[contenteditable="true"][role="textbox"]'],
+    responseSelectors: ['.markdown.prose', '.markdown', '.agent-turn .markdown'],
+  }),
+  claude: Object.freeze({
+    label: 'Claude',
+    url: 'https://claude.ai',
+    newChatUrl: 'https://claude.ai/new',
+    sendStrategy: 'claude',
+    composerSelectors: ['[contenteditable="true"]'],
+    responseSelectors: ['.prose', '[class*="prose"]', 'div[class*="font-claude-message"]', '[class*="font-claude-message"]', '.font-claude-message'],
+  }),
+  gemini: Object.freeze({
+    label: 'Gemini',
+    url: 'https://gemini.google.com',
+    newChatUrl: 'https://gemini.google.com/app',
+    sendStrategy: 'gemini',
+    composerSelectors: ['rich-textarea [contenteditable="true"]', 'div[role="textbox"][contenteditable="true"]', 'div[role="textbox"]'],
+    responseSelectors: ['message-content .message-content', 'message-content', '.message-content'],
+  }),
+  grok: Object.freeze({
+    label: 'Grok',
+    url: 'https://grok.com',
+    newChatUrl: 'https://grok.com/',
+    sendStrategy: 'grok',
+    composerSelectors: ['div.tiptap[role="textbox"]', 'div.ProseMirror[contenteditable="true"]', 'div[role="textbox"][contenteditable="true"]'],
+    responseSelectors: ['.prose', '.markdown', '[class*="message"] .markdown', 'article'],
+  }),
+  glm: Object.freeze({
+    label: '智谱',
+    url: 'https://chatglm.cn',
+    newChatUrl: 'https://chatglm.cn/',
+    sendStrategy: 'generic',
+    composerSelectors: ['textarea', 'div[contenteditable="true"]'],
+    responseSelectors: ['.markdown-body', '.message-content'],
+  }),
+  qianwen: Object.freeze({
+    label: '千问',
+    url: 'https://www.qianwen.com/',
+    newChatUrl: 'https://www.qianwen.com/',
+    sendStrategy: 'qianwen',
+    composerSelectors: ['div[role="textbox"]', 'div[contenteditable="true"]'],
+    responseSelectors: ['.markdown-body', '[class*="markdown"]', '.message-content'],
+  }),
+  deepseek: Object.freeze({
+    label: 'DeepSeek',
+    url: 'https://chat.deepseek.com',
+    newChatUrl: 'https://chat.deepseek.com/',
+    sendStrategy: 'generic',
+    composerSelectors: ['textarea', 'div[contenteditable="true"]'],
+    responseSelectors: ['.ds-markdown', '.markdown-body', '[class*="markdown"]', '.md-body', '.message-content'],
+  }),
+  doubao: Object.freeze({
+    label: '豆包',
+    url: 'https://www.doubao.com',
+    newChatUrl: 'https://www.doubao.com/',
+    sendStrategy: 'generic',
+    composerSelectors: ['textarea', 'div[contenteditable="true"]'],
+    responseSelectors: ['[class*="inner-item"]'],
+  }),
+  minimax: Object.freeze({
+    label: '海螺',
+    url: 'https://www.hailuo.ai',
+    newChatUrl: 'https://www.hailuo.ai/',
+    sendStrategy: 'generic',
+    composerSelectors: ['textarea', 'div[contenteditable="true"]'],
+    responseSelectors: ['.markdown-body', '.message-content'],
+  }),
+  kimi: Object.freeze({
+    label: 'Kimi',
+    url: 'https://kimi.moonshot.cn',
+    newChatUrl: 'https://kimi.moonshot.cn/',
+    sendStrategy: 'generic',
+    composerSelectors: ['textarea', 'div[contenteditable="true"]'],
+    responseSelectors: ['.markdown-body', '.kimi-markdown', '.message-content'],
+  }),
+});
+
+function getModelAdapter(modelId) {
+  const adapter = MODEL_ADAPTERS[modelId];
+  if (!adapter) throw new Error(`Unknown model adapter: ${modelId}`);
+  return adapter;
+}
+
+module.exports = {
+  DEFAULT_RESPONSE_SELECTORS,
+  MODEL_ADAPTERS,
+  getModelAdapter,
+};

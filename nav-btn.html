@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .page-nav-btn {
+      width: 100%;
+      height: 100%;
+      /* 强行使用千分之二透明度的背景色，防止 Windows 系统下鼠标事件穿透到透明 BrowserView，从而 100% 稳妥捕获 hover/click 事件 */
+      background: rgba(0, 0, 0, 0.002);
+      border: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: none;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-sizing: border-box;
+      user-select: none;
+    }
+    
+    .left-btn {
+      transform: translateX(-4px); /* 默认向边缘稍缩回 */
+    }
+    .right-btn {
+      transform: translateX(4px);
+    }
+    
+    /* 悬停微动交互 */
+    .left-btn:hover {
+      transform: translateX(0);
+    }
+    .right-btn:hover {
+      transform: translateX(0);
+    }
+    
+    .page-nav-btn.disabled {
+      opacity: 0.05 !important;
+      cursor: not-allowed;
+      pointer-events: none;
+      transform: none !important;
+    }
+    
+    svg {
+      width: 48px; /* 大幅增加符号尺寸 */
+      height: 48px;
+      /* 靛蓝色，同时带有适度的透明度 */
+      fill: #71717a;
+      opacity: 0.65;
+      /* 核心滤镜：在亮色(白底)/暗色(黑底)下均使用黑色投影将边缘勾勒出来，解决白底融为一体的问题 */
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 1px rgba(0, 0, 0, 0.5));
+      transition: all 0.2s ease-in-out;
+    }
+    
+    .page-nav-btn:hover svg {
+      fill: #3f3f46; /* 悬浮时使用更深的中性色 */
+      opacity: 1.0;
+      transform: scale(1.15); /* 稍微变大，更具点击指向性 */
+      /* 紫色发光外阴影 + 黑色投影兜底，确保在白底上也能看到极其显眼的高亮发光效果 */
+      filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.8)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    }
+    @media (prefers-color-scheme: dark) {
+      svg { fill: #a1a1aa; }
+      .page-nav-btn:hover svg { fill: #f4f4f5; filter: drop-shadow(0 0 8px rgba(255,255,255,.18)); }
+    }
+  </style>
+</head>
+<body>
+  <div id="btn" class="page-nav-btn">
+    <svg id="svg-arrow" viewBox="0 0 24 24"></svg>
+  </div>
+  <script>
+    const isLeft = location.hash === '#left';
+    const btn = document.getElementById('btn');
+    const svg = document.getElementById('svg-arrow');
+    
+    if (isLeft) {
+      btn.className = 'page-nav-btn left-btn';
+      svg.innerHTML = '<path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>';
+      btn.onclick = () => window.aiPortal.prevPage();
+    } else {
+      btn.className = 'page-nav-btn right-btn';
+      svg.innerHTML = '<path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>';
+      btn.onclick = () => window.aiPortal.nextPage();
+    }
+    
+    // 监听分页状态更新
+    window.aiPortal.onPageStatus(({ currentPage, maxPage, needsPaging }) => {
+      if (isLeft) {
+        if (currentPage === 0) {
+          btn.classList.add('disabled');
+        } else {
+          btn.classList.remove('disabled');
+        }
+      } else {
+        if (currentPage === maxPage - 1) {
+          btn.classList.add('disabled');
+        } else {
+          btn.classList.remove('disabled');
+        }
+      }
+    });
+  </script>
+</body>
+</html>

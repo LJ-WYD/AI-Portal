@@ -1,0 +1,17 @@
+{
+  "name": "ai-portal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Multi-AI Workspace Portal",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "start:mcp": "set PORTAL_BRIDGE_ENABLED=true&& set PORTAL_BRIDGE_PORT=28365&& electron .",
+    "start:mcp:secure": "node scripts/start-secure-mcp.js",
+    "setup:mcp:secure": "node scripts/create-mcp-local-config.js",
+    "check": "node --check main.js && node --check model-adapters.js && node --check hermes-portal-bridge.js && node --check portal-mcp-server.js && node --check scripts/create-mcp-local-config.js && node --check scripts/start-secure-mcp.js"
+  },
+  "devDependencies": {
+    "electron": "^43.1.1"
+  }
+}

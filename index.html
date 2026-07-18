@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Hub Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:      #f7f7f5;
+      --card:    #ffffff;
+      --border:  #e5e5e2;
+      --text:    #27272a;
+      --muted:   #71717a;
+      --primary: #52525b;
+      --success: #22c55e;
+      --danger:  #ef4444;
+      --warning: #f59e0b;
+    }
+
+    * { box-sizing: border-box; font-family: 'Inter', -apple-system, sans-serif; }
+
+    body {
+      margin: 0;
+      height: 52px;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    #top-bar {
+      position: relative;
+      height: 52px;
+      background: #f7f7f5;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      -webkit-app-region: drag;
+    }
+    #top-bar * { -webkit-app-region: no-drag; }
+
+    /* 底部渐变发光分割线 */
+    #top-bar::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 1px;
+      background: #e5e5e2;
+    }
+
+    .brand {
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: #52525b;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .sep { width: 1px; height: 18px; background: var(--border); flex-shrink: 0; }
+
+    /* 模型组：可横向滚动 */
+    .model-group {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      overflow-x: auto;
+      scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none;
+      padding-bottom: 2px; /* 防止 box-shadow 被裁切 */
+    }
+    .model-group::-webkit-scrollbar { display: none; }
+
+    /* 模型胶囊 */
+    .model-card {
+      display: flex;
+      align-items: stretch;
+      flex-shrink: 0;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: visible; /* 让 box-shadow 不被裁 */
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+
+    /* 各模型激活颜色 */
+    .model-card:has(input:checked) { border-color: #c9c9c3; background: #f1f1ef; }
+
+    .model-toggle {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 8px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .model-toggle input {
+      cursor: pointer;
+      width: 12px; height: 12px;
+      margin: 0; flex-shrink: 0;
+    }
+
+    /* 各模型 checkbox 品牌色 */
+    #enable-chatgpt  { accent-color: #10a37f; }
+    #enable-claude   { accent-color: #d97706; }
+    #enable-gemini   { accent-color: #4285f4; }
+    #enable-grok     { accent-color: #c084fc; }
+    #enable-glm      { accent-color: #7c3aed; }
+    #enable-qianwen  { accent-color: #f97316; }
+    #enable-deepseek { accent-color: #3b82f6; }
+    #enable-doubao   { accent-color: #a855f7; }
+    #enable-minimax  { accent-color: #06b6d4; }
+    #enable-kimi     { accent-color: #0891b2; }
+
+    /* 品牌色圆点 */
+    .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot { box-shadow: none !important; opacity: .7; }
+    .model-card[data-health="loading"] .dot { animation: health-pulse 1.1s ease-in-out infinite; }
+    .model-card[data-health="needs-login"] { border-color: #d6b36a; }
+    .model-card[data-health="needs-login"] .dot { background: #d6a84a; }
+    .model-card[data-health="unavailable"] { border-color: #d49a9a; }
+    .model-card[data-health="unavailable"] .dot { background: #b96d6d; }
+    .model-card[data-health="inactive"] .dot { opacity: .28; }
+    @keyframes health-pulse { 50% { opacity: .25; transform: scale(.78); } }
+    .model-toggle input { accent-color: var(--primary) !important; }
+    .dot-chatgpt  { background: #10a37f; box-shadow: 0 0 4px #10a37f; }
+    .dot-claude   { background: #d97706; box-shadow: 0 0 4px #d97706; }
+    .dot-gemini   { background: #4285f4; box-shadow: 0 0 4px #4285f4; }
+    .dot-grok     { background: #c084fc; box-shadow: 0 0 4px #c084fc; }
+    .dot-glm      { background: #7c3aed; box-shadow: 0 0 4px #7c3aed; }
+    .dot-qianwen  { background: #f97316; box-shadow: 0 0 4px #f97316; }
+    .dot-deepseek { background: #3b82f6; box-shadow: 0 0 4px #3b82f6; }
+    .dot-doubao   { background: #a855f7; box-shadow: 0 0 4px #a855f7; }
+    .dot-minimax  { background: #06b6d4; box-shadow: 0 0 4px #06b6d4; }
+    .dot-kimi     { background: #0891b2; box-shadow: 0 0 4px #0891b2; }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 0; left: 50%; transform: translateX(-50%);
+      background: var(--card); border: 1px solid var(--border);
+      color: var(--text); padding: 6px 16px;
+      border-radius: 7px 7px 0 0; font-size: 12px;
+      opacity: 0; transition: opacity 0.3s;
+      pointer-events: none; z-index: 999; white-space: nowrap;
+    }
+    #toast.show { opacity: 1; }
+    #toast.ok  { border-color: var(--success); color: var(--success); }
+    #toast.err { border-color: var(--danger);  color: var(--danger);  }
+    .btn-login-reset {
+      display: block; border: 1px solid rgba(248, 113, 113, .45); border-radius: 6px;
+      padding: 5px 9px; color: #8b5e5e; background: transparent; cursor: pointer;
+      font-size: 12px;
+    }
+    .btn-login-reset:hover { background: #faf5f5; }
+    .theme-toggle {
+      width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 6px;
+      background: var(--card); color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1;
+    }
+    .theme-toggle:hover { color: var(--text); border-color: #bdbdb7; }
+
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #1c1c1b; --card: #27272a; --border: #3f3f46; --text: #f4f4f5; --muted: #a1a1aa; --primary: #d4d4d8; }
+      #top-bar { background: #1c1c1b; }
+      #top-bar::after { background: #3f3f46; }
+      .brand { color: #d4d4d8; }
+      .model-card:has(input:checked) { border-color: #52525b; background: #303033; }
+      .btn-login-reset { border-color: #6b4f4f; color: #d6aaaa; }
+      .btn-login-reset:hover { background: #332727; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="top-bar">
+  <div class="brand">AI PORTAL</div>
+  <div class="sep"></div>
+
+  <div class="model-group">
+
+    <!-- ===== 国际 AI ===== -->
+    <div class="model-card chatgpt">
+      <label class="model-toggle">
+        <span class="dot dot-chatgpt"></span>
+        <input type="checkbox" id="enable-chatgpt" checked onchange="handleToggle('chatgpt')">
+        ChatGPT
+      </label>
+    </div>
+
+    <div class="model-card claude">
+      <label class="model-toggle">
+        <span class="dot dot-claude"></span>
+        <input type="checkbox" id="enable-claude" checked onchange="handleToggle('claude')">
+        Claude
+      </label>
+    </div>
+
+    <div class="model-card gemini">
+      <label class="model-toggle">
+        <span class="dot dot-gemini"></span>
+        <input type="checkbox" id="enable-gemini" checked onchange="handleToggle('gemini')">
+        Gemini
+      </label>
+    </div>
+
+    <div class="model-card grok">
+      <label class="model-toggle">
+        <span class="dot dot-grok"></span>
+        <input type="checkbox" id="enable-grok" onchange="handleToggle('grok')">
+        Grok
+      </label>
+    </div>
+
+    <!-- 分割点 -->
+    <div class="sep"></div>
+
+    <!-- ===== 国产 AI ===== -->
+    <div class="model-card glm">
+      <label class="model-toggle">
+        <span class="dot dot-glm"></span>
+        <input type="checkbox" id="enable-glm" onchange="handleToggle('glm')">
+        智谱
+      </label>
+    </div>
+
+    <div class="model-card qianwen">
+      <label class="model-toggle">
+        <span class="dot dot-qianwen"></span>
+        <input type="checkbox" id="enable-qianwen" onchange="handleToggle('qianwen')">
+        千问
+      </label>
+    </div>
+
+    <div class="model-card deepseek">
+      <label class="model-toggle">
+        <span class="dot dot-deepseek"></span>
+        <input type="checkbox" id="enable-deepseek" onchange="handleToggle('deepseek')">
+        DeepSeek
+      </label>
+    </div>
+
+    <div class="model-card doubao">
+      <label class="model-toggle">
+        <span class="dot dot-doubao"></span>
+        <input type="checkbox" id="enable-doubao" onchange="handleToggle('doubao')">
+        豆包
+      </label>
+    </div>
+
+    <div class="model-card minimax">
+      <label class="model-toggle">
+        <span class="dot dot-minimax"></span>
+        <input type="checkbox" id="enable-minimax" onchange="handleToggle('minimax')">
+        海螺
+      </label>
+    </div>
+
+    <div class="model-card kimi">
+      <label class="model-toggle">
+        <span class="dot dot-kimi"></span>
+        <input type="checkbox" id="enable-kimi" onchange="handleToggle('kimi')">
+        Kimi
+      </label>
+    </div>
+
+  </div><!-- .model-group -->
+
+  <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="切换浅色或深色主题">☾</button>
+  <button class="btn-login-reset" onclick="clearLoginSessions()">重置登录</button>
+  <div id="page-indicator" style="display: none; font-size: 11px; font-weight: 600; color: #818cf8; background: rgba(129, 140, 248, 0.1); border: 1px solid rgba(129, 140, 248, 0.2); padding: 5px 10px; border-radius: 6px; margin-right: 10px; white-space: nowrap;">1 / 1</div>
+</div>
+
+<div id="toast"></div>
+
+
+
+<script>
+  // 初始激活状态与 main.js 的 activeModels 默认值保持一致
+  const modelState = {
+    chatgpt: true, claude: true, gemini: true, grok: false,
+    glm: false, qianwen: false, deepseek: false, doubao: false, minimax: false, kimi: false,
+  };
+
+  function handleToggle(id) {
+    modelState[id] = document.getElementById(`enable-${id}`).checked;
+    window.aiPortal.toggleModel(id, modelState[id]);
+  }
+
+  async function applyThemeButton() {
+    const { dark } = await window.aiPortal.getTheme();
+    document.getElementById('theme-toggle').textContent = dark ? '☀' : '☾';
+  }
+
+  async function toggleTheme() {
+    const { dark } = await window.aiPortal.getTheme();
+    const result = await window.aiPortal.setTheme(dark ? 'light' : 'dark');
+    document.getElementById('theme-toggle').textContent = result.dark ? '☀' : '☾';
+  }
+
+  applyThemeButton();
+
+  async function clearLoginSessions() {
+    if (!confirm('这会清除所有模型在本应用中的登录状态。确定继续吗？')) return;
+    const result = await window.aiPortal.clearModelSessions();
+    showToast(
+      result.success ? '登录状态已清除，请在模型页面完成正常登录验证。' : '部分登录数据清除失败，请重试。',
+      result.success ? 'ok' : 'err'
+    );
+  }
+
+  function showToast(msg, type) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'show' + (type ? ' ' + type : '');
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.className = '', 4000);
+  }
+
+  function applyModelHealth({ modelId, status, reason }) {
+    const card = document.querySelector(`.model-card.${modelId}`);
+    if (!card) return;
+    card.dataset.health = status;
+    const title = reason || '';
+    card.title = title;
+    const dot = card.querySelector('.dot');
+    if (dot) dot.title = title;
+  }
+
+  window.aiPortal.onModelHealth(applyModelHealth);
+  window.aiPortal.getModelHealth().then(healthMap => {
+    Object.values(healthMap).forEach(applyModelHealth);
+  });
+
+  // 监听主进程的分页状态更新并更新 UI
+  window.aiPortal.onPageStatus(({ currentPage, maxPage, needsPaging, totalCount }) => {
+    const pageInd = document.getElementById('page-indicator');
+
+    if (needsPaging) {
+      pageInd.style.display = 'block';
+      pageInd.textContent = `${currentPage + 1} / ${maxPage}`;
+    } else {
+      pageInd.style.display = 'none';
+    }
+  });
+</script>
+</body>
+</html>

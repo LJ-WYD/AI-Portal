@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Response Summary</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:          rgba(250, 250, 249, 0.96);
+      --card-bg:     #ffffff;
+      --border:      #e4e4e0;
+      --text:        #27272a;
+      --muted:       #71717a;
+      --primary:     #52525b;
+      --success:     #71717a;
+      --cyan:        #71717a;
+    }
+
+    * { box-sizing: border-box; font-family: 'Inter', -apple-system, sans-serif; margin: 0; padding: 0; }
+
+    /* 整体毛玻璃背景 */
+    body {
+      width: 100%;
+      height: 100vh;
+      background: var(--bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      color: var(--text);
+      overflow: hidden;
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 头部栏 */
+    .header {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    .title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: #3f3f46;
+    }
+    .close-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.25s;
+    }
+    .close-btn:hover {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.5);
+      color: #ef4444;
+      transform: rotate(90deg);
+    }
+
+    /* 控制面板区域 */
+    .control-panel {
+      padding: 16px 20px;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .control-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .selection-hint {
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .selection-hint strong { color: var(--text); font-weight: 600; }
+    .select-wrapper {
+      position: relative;
+    }
+    select {
+      width: 100%;
+      height: 38px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 0 12px;
+      font-size: 12.5px;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      transition: border-color 0.2s;
+    }
+    select:focus {
+      border-color: var(--primary);
+    }
+    /* 自定义下拉箭头 */
+    .select-wrapper::after {
+      content: '▼';
+      font-size: 9px;
+      color: var(--muted);
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
+    .action-btn {
+      width: 100%;
+      height: 38px;
+      background: var(--primary);
+      border: none;
+      border-radius: 6px;
+      color: white;
+      font-weight: 600;
+      font-size: 12.5px;
+      cursor: pointer;
+      box-shadow: none;
+      transition: all 0.2s;
+    }
+    .action-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: none;
+    }
+    .action-btn:active {
+      transform: translateY(1px);
+    }
+    .refresh-btn {
+      width: 100%; height: 34px; background: transparent; border: 1px solid var(--border);
+      border-radius: 6px; color: var(--muted); font-size: 12px; cursor: pointer;
+    }
+    .refresh-btn:hover { border-color: var(--primary); color: var(--text); }
+
+    /* 对比卡片滚动列表 */
+    .cards-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    /* 自定义美化滚动条 */
+    .cards-container::-webkit-scrollbar { width: 5px; }
+    .cards-container::-webkit-scrollbar-track { background: transparent; }
+    .cards-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .cards-container::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+    /* 单个模型卡片 */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: border-color 0.25s, transform 0.2s;
+    }
+    .card:hover {
+      border-color: rgba(99, 102, 241, 0.5);
+    }
+
+    /* 卡片头部（品牌色侧边指示条） */
+    .card-header {
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid rgba(80, 83, 130, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-left: 3px solid var(--primary);
+    }
+    .card-title {
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .include-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-right: 8px;
+      font-size: 10px;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+    }
+    .include-toggle input { accent-color: var(--primary); cursor: pointer; }
+    .copy-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 11px;
+      cursor: pointer;
+      transition: color 0.2s;
+      font-weight: 500;
+    }
+    .copy-btn:hover {
+      color: var(--text);
+    }
+    .status-badge {
+      margin-left: auto; margin-right: 8px; font-size: 10px; color: var(--muted);
+    }
+    .status-badge.ready { color: #4d7c5a; }
+    .status-badge.partial, .status-badge.error { color: #9a6a4a; }
+    .retry-btn {
+      background: transparent; border: none; color: var(--muted); font-size: 11px; cursor: pointer;
+    }
+    .retry-btn:hover { color: var(--text); }
+
+    /* 卡片内容 */
+    .card-body {
+      padding: 12px 14px;
+      font-size: 12px;
+      line-height: 1.6;
+      max-height: 180px;
+      overflow-y: auto;
+      white-space: pre-wrap; /* 换行保留 */
+      color: var(--text);
+    }
+    .card-body::-webkit-scrollbar { width: 4px; }
+    .card-body::-webkit-scrollbar-track { background: transparent; }
+    .card-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 2px; }
+
+    /* 空白状态或加载提示 */
+    .loading-text {
+      color: var(--muted);
+      font-style: italic;
+      font-size: 11.5px;
+    }
+
+    /* 各模型品牌色条 */
+    .brand-chatgpt  { border-left-color: #10a37f !important; }
+    .brand-claude   { border-left-color: #d97706 !important; }
+    .brand-gemini   { border-left-color: #4285f4 !important; }
+    .brand-grok     { border-left-color: #c084fc !important; }
+    .brand-glm      { border-left-color: #7c3aed !important; }
+    .brand-qianwen  { border-left-color: #f97316 !important; }
+    .brand-deepseek { border-left-color: #3b82f6 !important; }
+    .brand-doubao   { border-left-color: #a855f7 !important; }
+    .brand-minimax  { border-left-color: #06b6d4 !important; }
+    .brand-kimi     { border-left-color: #0891b2 !important; }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: var(--card-bg); border: 1px solid var(--border);
+      color: var(--cyan); padding: 6px 14px;
+      border-radius: 6px; font-size: 11px; font-weight: 500;
+      opacity: 0; transition: opacity 0.3s;
+      pointer-events: none; z-index: 999;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+    #toast.show { opacity: 1; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: rgba(28, 28, 27, .97); --card-bg: #292929; --border: #454545; --text: #f4f4f5; --muted: #a1a1aa; --primary: #d4d4d8; --success: #a1a1aa; --cyan: #a1a1aa; }
+      select { background: #252525; }
+      .title { color: #e4e4e7; }
+      .action-btn { color: #27272a; }
+      .status-badge.ready { color: #a7d4ad; }
+      .status-badge.partial, .status-badge.error { color: #e2bb91; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="title">✨ 对话汇总与提炼</div>
+    <button class="close-btn" onclick="window.summaryPanel.closeSummary()">×</button>
+  </div>
+
+  <div class="control-panel">
+    <button class="refresh-btn" id="refresh-summary-btn">刷新回答</button>
+    <div class="control-label">选择用来做总结的 AI</div>
+    <div class="selection-hint"><span>参与提炼的回答</span><strong id="selection-count">0 / 4</strong></div>
+    <div class="select-wrapper">
+      <select id="model-select">
+        <!-- 动态生成 -->
+      </select>
+    </div>
+    <button class="action-btn" id="start-summary-btn">开始智能提炼</button>
+  </div>
+
+  <div class="cards-container" id="cards-list">
+    <!-- 动态生成卡片 -->
+  </div>
+
+  <div id="toast">已复制到剪贴板</div>
+
+  <script>
+    // 缓存在本地的所有模型的数据
+    let cachedData = {};
+    let cachedOriginalPrompt = '';
+    const MAX_SUMMARY_MODELS = 4;
+    let selectedSummaryModels = new Set();
+    let summarySelectionInitialized = false;
+    // 所有 AI 的展示名称映射
+    const AI_LABELS = {
+      chatgpt: 'ChatGPT', claude: 'Claude', gemini: 'Gemini', grok: 'Grok',
+      glm: '智谱清言', qianwen: '通义千问', deepseek: 'DeepSeek', doubao: '豆包',
+      minimax: '海螺 AI', kimi: 'Kimi'
+    };
+
+    // 监听主进程发来的多模型文本数据
+    window.summaryPanel.onSummaryData(({ activeModels, responses = {}, originalPrompt = '' }) => {
+      cachedOriginalPrompt = originalPrompt;
+      cachedData = Object.fromEntries(activeModels.map(mId => {
+        const response = responses[mId];
+        return [mId, response && response.status === 'ready' ? response.text : ''];
+      }));
+
+      if (!summarySelectionInitialized) {
+        selectedSummaryModels = new Set(activeModels.slice(0, MAX_SUMMARY_MODELS));
+        summarySelectionInitialized = true;
+      } else {
+        selectedSummaryModels = new Set([...selectedSummaryModels].filter(mId => activeModels.includes(mId)));
+      }
+      updateSelectionCount();
+      
+      // 1. 更新 AI 下拉列表
+      const select = document.getElementById('model-select');
+      select.innerHTML = '';
+      activeModels.forEach(mId => {
+        const opt = document.createElement('option');
+        opt.value = mId;
+        opt.textContent = AI_LABELS[mId] || mId;
+        select.appendChild(opt);
+      });
+      if (select.value) window.summaryPanel.prepareSummaryModel(select.value);
+
+      // 2. 渲染各模型回答的卡片
+      const list = document.getElementById('cards-list');
+      list.innerHTML = '';
+
+      if (activeModels.length === 0) {
+        list.innerHTML = '<div style="text-align: center; color: var(--muted); padding-top: 50px; font-size:12px;">没有已勾选的模型</div>';
+        return;
+      }
+
+      activeModels.forEach(mId => {
+        const response = responses[mId] || { status: 'collecting', text: '' };
+        const text = response.text || '';
+        
+        const card = document.createElement('div');
+        card.className = 'card';
+        
+        const header = document.createElement('div');
+        header.className = `card-header brand-${mId}`;
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'card-title';
+        nameSpan.textContent = AI_LABELS[mId] || mId;
+
+        const includeLabel = document.createElement('label');
+        includeLabel.className = 'include-toggle';
+        const includeCheckbox = document.createElement('input');
+        includeCheckbox.type = 'checkbox';
+        includeCheckbox.checked = selectedSummaryModels.has(mId);
+        includeCheckbox.addEventListener('change', () => {
+          if (includeCheckbox.checked && selectedSummaryModels.size >= MAX_SUMMARY_MODELS) {
+            includeCheckbox.checked = false;
+            showToast(`最多选择 ${MAX_SUMMARY_MODELS} 个模型回答`);
+            return;
+          }
+          if (includeCheckbox.checked) selectedSummaryModels.add(mId);
+          else selectedSummaryModels.delete(mId);
+          updateSelectionCount();
+        });
+        includeLabel.appendChild(includeCheckbox);
+        includeLabel.append('参与');
+
+        const status = document.createElement('span');
+        status.className = `status-badge ${response.status}`;
+        status.textContent = ({ collecting: '抓取中', ready: '已完成', partial: '可能未完成', error: '抓取失败' })[response.status] || '等待中';
+        
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'copy-btn';
+        copyBtn.textContent = '复制';
+        copyBtn.onclick = () => {
+          if (!text) return;
+          navigator.clipboard.writeText(text);
+          showToast();
+        };
+        
+        header.appendChild(includeLabel);
+        header.appendChild(nameSpan);
+        header.appendChild(status);
+        if (text) header.appendChild(copyBtn);
+        if (response.status === 'partial' || response.status === 'error') {
+          const retryBtn = document.createElement('button');
+          retryBtn.className = 'retry-btn';
+          retryBtn.textContent = '重试';
+          retryBtn.onclick = () => window.summaryPanel.retryModelSummary(mId);
+          header.appendChild(retryBtn);
+        }
+        
+        const body = document.createElement('div');
+        body.className = 'card-body';
+        if (text) {
+          if (text.startsWith('DEBUG_INFO:')) {
+            body.style.color = '#ff6b6b';
+            body.style.fontSize = '11px';
+            body.style.whiteSpace = 'normal';
+            body.style.wordBreak = 'break-all';
+            body.textContent = '🔍 诊断: ' + text.substring(11);
+          } else {
+            body.textContent = text;
+          }
+        } else {
+          body.innerHTML = '<span class="loading-text">该模型暂无最新对话回答...</span>';
+        }
+        
+        if (!text) {
+          body.textContent = response.status === 'error'
+            ? (response.error || '未找到可用回答，请重试。')
+            : '正在等待回答稳定后抓取…';
+          body.classList.add('loading-text');
+        }
+
+        card.appendChild(header);
+        card.appendChild(body);
+        list.appendChild(card);
+      });
+    });
+
+    // 智能提炼按钮点击监听
+    document.getElementById('refresh-summary-btn').addEventListener('click', () => {
+      window.summaryPanel.refreshSummary();
+    });
+
+    document.getElementById('model-select').addEventListener('change', (event) => {
+      window.summaryPanel.prepareSummaryModel(event.target.value);
+    });
+
+    document.getElementById('start-summary-btn').addEventListener('click', () => {
+      const select = document.getElementById('model-select');
+      const targetModelId = select.value;
+      if (!targetModelId) return;
+
+      // 保留每个模型的首尾信息，避免多模型长回答一次性注入时超过目标网页的稳定处理范围。
+      const MAX_CHARS_PER_MODEL = 3600;
+      let textBlock = '';
+      [...selectedSummaryModels].forEach(mId => {
+        const val = cachedData[mId];
+        if (!val) return;
+
+        const response = val.trim();
+        const excerpt = response.length > MAX_CHARS_PER_MODEL
+          ? `${response.slice(0, 2800)}\n\n[该模型回答较长，已省略中间 ${response.length - MAX_CHARS_PER_MODEL} 个字符]\n\n${response.slice(-800)}`
+          : response;
+        textBlock += `【${AI_LABELS[mId] || mId} 的回答】：\n${excerpt}\n\n`;
+      });
+
+      if (!textBlock) {
+        alert('暂无可用于总结对比的模型对话内容！');
+        return;
+      }
+
+      const prompt = `以下是目前我的问题在各个不同 AI 模型中获得的回复内容：\n\n${textBlock}\n请仔细阅读上述各个模型的回答，对比它们的核心共识与关键分歧，并帮我梳理出一份最权威、最精炼的「综合提炼报告」。`;
+      
+      // 触发主进程的总结派发
+      const promptWithContext = `原始问题：\n${cachedOriginalPrompt || '未记录原始问题，请基于下列回答梳理问题背景。'}\n\n${prompt}`;
+      window.summaryPanel.triggerAISummary(targetModelId, promptWithContext);
+    });
+
+    function showToast() {
+      const el = document.getElementById('toast');
+      if (arguments[0]) el.textContent = arguments[0];
+      el.className = 'show';
+      clearTimeout(el._t);
+      el._t = setTimeout(() => {
+        el.className = '';
+        el.textContent = '已复制到剪贴板';
+      }, 2000);
+    }
+
+    function updateSelectionCount() {
+      const count = document.getElementById('selection-count');
+      if (count) count.textContent = `${selectedSummaryModels.size} / ${MAX_SUMMARY_MODELS}`;
+    }
+
+    // 页面完全加载且脚本初始化完成后，向主进程发送就绪状态，拉取数据
+    window.summaryPanel.sendSummaryReady();
+  </script>
+</body>
+</html>

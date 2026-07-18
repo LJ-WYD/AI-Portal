@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Bottom Bar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:       #f2f2f0;
+      --input-bg: #ffffff;
+      --primary:  #52525b;
+      --text:     #27272a;
+      --muted:    #8a8a91;
+      --border:   #d9d9d5;
+    }
+
+    * { box-sizing: border-box; font-family: 'Inter', -apple-system, sans-serif; margin: 0; padding: 0; }
+
+    body {
+      position: relative;
+      height: 65px;
+      /* 底栏背景：比顶栏略带紫蓝色调 */
+      background: #f2f2f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 20px;
+      overflow: hidden;
+      -webkit-app-region: drag;
+    }
+    body * { -webkit-app-region: no-drag; }
+
+    /* 顶部发光分割线（伪元素） */
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: #deded9;
+    }
+
+    .bar {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* 渐变边框输入框容器 */
+    .input-wrapper {
+      flex: 1;
+      position: relative;
+      border-radius: 22px;
+      /* 渐变背景作为边框 */
+      background: var(--border);
+      padding: 1px;
+      transition: all 0.25s;
+    }
+    .input-wrapper:focus-within {
+      background: var(--primary);
+      box-shadow:
+        0 0 0 3px rgba(82,82,91,0.14);
+    }
+
+    #prompt-input {
+      width: 100%;
+      height: 42px;
+      background: var(--input-bg);
+      border: none;
+      color: var(--text);
+      padding: 0 20px;
+      border-radius: 21px;
+      font-size: 13.5px;
+      outline: none;
+      transition: background 0.2s;
+      display: block;
+    }
+    #prompt-input::placeholder { color: var(--muted); }
+    #prompt-input:focus { background: #ffffff; }
+
+    /* 发送按钮 */
+    #send-btn {
+      height: 42px;
+      padding: 0 26px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 21px;
+      font-weight: 600;
+      font-size: 13.5px;
+      cursor: pointer;
+      box-shadow: none;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      flex-shrink: 0;
+      letter-spacing: 0.3px;
+    }
+    #send-btn:hover {
+      transform: translateY(-1.5px);
+      box-shadow: none;
+    }
+    #send-btn:active {
+      transform: translateY(1px);
+      box-shadow: none;
+    }
+
+    /* 新建会话按钮 */
+    #new-chat-btn {
+      height: 42px;
+      padding: 0 22px;
+      background: transparent;
+      color: #3f3f46;
+      border: 1px solid #c9c9c5;
+      border-radius: 21px;
+      font-weight: 600;
+      font-size: 13.5px;
+      cursor: pointer;
+      box-shadow: none;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      flex-shrink: 0;
+      letter-spacing: 0.3px;
+    }
+    #new-chat-btn:hover {
+      transform: translateY(-1.5px);
+      border-color: #a1a1aa;
+      color: #3f3f46;
+      background: #fafafa;
+      box-shadow: none;
+    }
+    #new-chat-btn:active {
+      transform: translateY(1px);
+      box-shadow: none;
+    }
+
+    /* 一键汇总按钮 */
+    #summary-btn {
+      height: 42px;
+      padding: 0 22px;
+      background: #57534e;
+      color: white;
+      border: none;
+      border-radius: 21px;
+      font-weight: 600;
+      font-size: 13.5px;
+      cursor: pointer;
+      box-shadow: none;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      flex-shrink: 0;
+      letter-spacing: 0.3px;
+    }
+    #summary-btn:hover {
+      transform: translateY(-1.5px);
+      background: #44403c;
+      box-shadow: none;
+    }
+    #summary-btn:active {
+      transform: translateY(1px);
+      box-shadow: none;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #20201f; --input-bg: #2a2a29; --primary: #d4d4d8; --text: #f4f4f5; --muted: #a1a1aa; --border: #454543; }
+      body { background: #20201f; }
+      body::before { background: #454543; }
+      #send-btn { color: #27272a; }
+      #new-chat-btn { color: #d4d4d8; border-color: #525252; background: transparent; }
+      #new-chat-btn:hover { color: #ffffff; border-color: #71717a; background: #30302f; }
+      #summary-btn { background: #d4d4d8; color: #27272a; }
+      #summary-btn:hover { background: #f4f4f5; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <div class="input-wrapper">
+      <input
+        type="text"
+        id="prompt-input"
+        placeholder="输入 Prompt，按回车或点击「一键群发」同时发送给所有选中的 AI..."
+        autofocus
+      />
+    </div>
+    <button id="send-btn">一键群发</button>
+    <button id="new-chat-btn">新建会话</button>
+    <button id="summary-btn">一键汇总</button>
+  </div>
+
+  <script>
+    function send() {
+      const v = document.getElementById('prompt-input').value.trim();
+      if (!v) return;
+      window.bottomBar.sendPrompt(v);
+      document.getElementById('prompt-input').value = '';
+    }
+    document.getElementById('send-btn').addEventListener('click', send);
+    document.getElementById('new-chat-btn').addEventListener('click', () => {
+      window.bottomBar.newChat();
+    });
+    document.getElementById('summary-btn').addEventListener('click', () => {
+      window.bottomBar.triggerSummary();
+    });
+    document.getElementById('prompt-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+    });
+  </script>
+</body>
+</html>
