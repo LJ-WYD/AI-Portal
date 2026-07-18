@@ -38,6 +38,21 @@ jobs:
       - name: Build Windows distributions
         run: npm run make:win
 
+      - name: Normalize portable archive name
+        shell: pwsh
+        run: |
+          $portableFiles = @(Get-ChildItem -LiteralPath "out\make\zip\win32\x64" -Filter "*.zip" -File)
+          if ($portableFiles.Count -ne 1) {
+            throw "Expected exactly one portable ZIP, found $($portableFiles.Count)."
+          }
+
+          $portable = $portableFiles[0]
+          $normalizedName = $portable.Name -replace "\s+", "-"
+          if ($normalizedName -ne $portable.Name) {
+            $normalizedPath = Join-Path $portable.DirectoryName $normalizedName
+            Move-Item -LiteralPath $portable.FullName -Destination $normalizedPath
+          }
+
       - name: Generate SHA-256 checksums
         shell: pwsh
         run: |
