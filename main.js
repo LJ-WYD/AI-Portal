@@ -1,8 +1,12 @@
 const { app, BrowserWindow, BrowserView, ipcMain, nativeTheme, session } = require('electron');
+if (require('electron-squirrel-startup')) app.quit();
+
 const crypto = require('crypto');
 const path = require('path');
 const { DEFAULT_RESPONSE_SELECTORS, MODEL_ADAPTERS } = require('./model-adapters');
 const { createHermesPortalBridge } = require('./hermes-portal-bridge');
+
+app.setAppUserModelId('com.squirrel.AIPortal.AIPortal');
 
 const TOP_HEIGHT    = 52;
 const BOTTOM_HEIGHT = 65;

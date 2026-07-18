@@ -51,6 +51,21 @@ npm start
 
 登录状态保存在 Electron 为每个模型创建的本地持久化分区中。点击“重置登录”会清除 Portal 内的模型登录状态。
 
+## Windows 构建
+
+安装依赖后，可生成 Windows x64 安装版和便携版：
+
+```powershell
+npm run make:win
+```
+
+构建产物位于：
+
+- `out/make/squirrel.windows/x64/AI-Portal-Setup.exe`：Windows 安装版。
+- `out/make/zip/win32/x64/AI Portal-win32-x64-<version>.zip`：解压即用的便携版。
+
+当前测试版本尚未进行代码签名，Windows 可能显示未知发布者或网络访问提示。公开分发前建议为安装包和可执行文件配置可信代码签名证书。
+
 ## Hermes / Telegram（可选）
 
 核心桌面功能不依赖 Hermes。需要从移动端提交 Portal 任务时：
@@ -76,7 +91,7 @@ npm run start:mcp:secure
 
 ## 项目状态
 
-当前重点是提高不同模型页面变化下的稳定性、登录体验、综合提炼质量和 Windows 发布体验。正式公开发布前仍需完成安装包、代码签名和许可证选择。
+当前重点是提高不同模型页面变化下的稳定性、登录体验、综合提炼质量和 Windows 发布体验。Windows 安装版与便携版已经可以构建；正式公开发布前仍需完成代码签名和许可证选择。
 
 ## 免责声明
 

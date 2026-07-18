@@ -1,17 +1,28 @@
 {
   "name": "ai-portal",
-  "version": "1.0.0",
+  "productName": "AI Portal",
+  "version": "0.1.0-beta.1",
   "private": true,
   "description": "Multi-AI Workspace Portal",
+  "author": "AI Portal",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
-    "start:mcp": "set PORTAL_BRIDGE_ENABLED=true&& set PORTAL_BRIDGE_PORT=28365&& electron .",
+    "start": "electron-forge start",
+    "start:mcp": "set PORTAL_BRIDGE_ENABLED=true&& set PORTAL_BRIDGE_PORT=28365&& electron-forge start",
     "start:mcp:secure": "node scripts/start-secure-mcp.js",
     "setup:mcp:secure": "node scripts/create-mcp-local-config.js",
-    "check": "node --check main.js && node --check model-adapters.js && node --check hermes-portal-bridge.js && node --check portal-mcp-server.js && node --check scripts/create-mcp-local-config.js && node --check scripts/start-secure-mcp.js"
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "make:win": "electron-forge make --platform=win32 --arch=x64",
+    "check": "node --check main.js && node --check model-adapters.js && node --check hermes-portal-bridge.js && node --check portal-mcp-server.js && node --check forge.config.js && node --check scripts/create-mcp-local-config.js && node --check scripts/start-secure-mcp.js"
   },
   "devDependencies": {
+    "@electron-forge/cli": "^7.11.2",
+    "@electron-forge/maker-squirrel": "^7.11.2",
+    "@electron-forge/maker-zip": "^7.11.2",
     "electron": "^43.1.1"
+  },
+  "dependencies": {
+    "electron-squirrel-startup": "^1.0.1"
   }
 }
