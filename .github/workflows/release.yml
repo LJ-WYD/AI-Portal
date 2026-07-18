@@ -1,0 +1,92 @@
+name: Release Windows
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate source
+        run: |
+          npm run check
+          npm audit --omit=dev --audit-level=high
+
+      - name: Build Windows distributions
+        run: npm run make:win
+
+      - name: Generate SHA-256 checksums
+        shell: pwsh
+        run: |
+          $installer = Get-Item -LiteralPath "out\make\squirrel.windows\x64\AI-Portal-Setup.exe"
+          $portableFiles = @(Get-ChildItem -LiteralPath "out\make\zip\win32\x64" -Filter "*.zip" -File)
+          if ($portableFiles.Count -ne 1) {
+            throw "Expected exactly one portable ZIP, found $($portableFiles.Count)."
+          }
+
+          $assets = @($installer, $portableFiles[0])
+          $checksums = foreach ($asset in $assets) {
+            $hash = (Get-FileHash -LiteralPath $asset.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $($asset.Name)"
+          }
+          $checksums | Set-Content -LiteralPath "out\make\SHA256SUMS.txt" -Encoding ascii
+          Get-Content -LiteralPath "out\make\SHA256SUMS.txt"
+
+      - name: Generate build provenance
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            out/make/squirrel.windows/x64/AI-Portal-Setup.exe
+            out/make/zip/win32/x64/*.zip
+            out/make/SHA256SUMS.txt
+
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $portable = Get-ChildItem -LiteralPath "out\make\zip\win32\x64" -Filter "*.zip" -File | Select-Object -First 1
+          $assets = @(
+            "out\make\squirrel.windows\x64\AI-Portal-Setup.exe",
+            $portable.FullName,
+            "out\make\SHA256SUMS.txt"
+          )
+          $arguments = @(
+            "release",
+            "create",
+            $env:GITHUB_REF_NAME
+          ) + $assets + @(
+            "--verify-tag",
+            "--generate-notes",
+            "--title",
+            "AI Portal $env:GITHUB_REF_NAME",
+            "--notes",
+            "当前 Windows 测试版本尚未进行代码签名。请仅从本仓库下载，并使用 SHA256SUMS.txt 校验文件完整性。"
+          )
+          if ($env:GITHUB_REF_NAME -match "-") {
+            $arguments += "--prerelease"
+          }
+          & gh @arguments
