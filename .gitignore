@@ -7,6 +7,18 @@ release/
 coverage/
 .cache/
 
+# Local Electron/browser authentication and conversation state
+.user-data/
+user-data/
+User Data/
+Partitions/
+Session Storage/
+Local Storage/
+IndexedDB/
+Cookies
+Network/
+GPUCache/
+
 .env
 .env.*
 !.env.example
