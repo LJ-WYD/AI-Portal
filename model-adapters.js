@@ -13,6 +13,9 @@ const MODEL_ADAPTERS = Object.freeze({
     sendStrategy: 'chatgpt',
     composerSelectors: ['#prompt-textarea', '[contenteditable="true"][data-placeholder]', 'div[contenteditable="true"][role="textbox"]'],
     responseSelectors: ['.markdown.prose', '.markdown', '.agent-turn .markdown'],
+    modeControls: [
+      { action: 'disable', labels: ['Agent mode', 'Agent', 'Deep research', 'Thinking', '思考'] },
+    ],
   }),
   claude: Object.freeze({
     label: 'Claude',
@@ -21,6 +24,9 @@ const MODEL_ADAPTERS = Object.freeze({
     sendStrategy: 'claude',
     composerSelectors: ['[aria-label="Write your prompt to Claude"]', '[role="textbox"][contenteditable="true"]', '[contenteditable="true"]'],
     responseSelectors: ['[data-testid*="assistant"] .prose', '[data-testid*="assistant"]', '[role="article"]', '.font-claude-message', '[class*="font-claude-message"]', '.prose'],
+    modeControls: [
+      { action: 'disable', labels: ['Extended thinking', 'Thinking', 'Research', 'Agent', '思考'] },
+    ],
   }),
   gemini: Object.freeze({
     label: 'Gemini',
@@ -29,6 +35,9 @@ const MODEL_ADAPTERS = Object.freeze({
     sendStrategy: 'gemini',
     composerSelectors: ['rich-textarea [contenteditable="true"]', 'div[role="textbox"][contenteditable="true"]', 'div[role="textbox"]'],
     responseSelectors: ['[id^="model-response-message-content"]', 'model-response message-content', 'message-content .message-content', 'message-content', '.message-content'],
+    modeControls: [
+      { action: 'disable', labels: ['Deep Research', 'Agent', 'Thinking', '深度研究', '思考'] },
+    ],
   }),
   grok: Object.freeze({
     label: 'Grok',
@@ -37,6 +46,9 @@ const MODEL_ADAPTERS = Object.freeze({
     sendStrategy: 'grok',
     composerSelectors: ['div.tiptap[role="textbox"]', 'div.ProseMirror[contenteditable="true"]', 'div[role="textbox"][contenteditable="true"]'],
     responseSelectors: ['.prose', '.markdown', '[class*="message"] .markdown', 'article'],
+    modeControls: [
+      { action: 'disable', labels: ['Think', 'Thinking', 'DeepSearch', 'Deep Search', 'Agent', '思考'] },
+    ],
   }),
   glm: Object.freeze({
     label: 'Zhipu AI',
@@ -45,6 +57,10 @@ const MODEL_ADAPTERS = Object.freeze({
     sendStrategy: 'generic',
     composerSelectors: ['textarea', 'div[contenteditable="true"]'],
     responseSelectors: ['.markdown-body', '.message-content'],
+    modeControls: [
+      { action: 'select', labels: ['快速模式', '快速', '标准模式'] },
+      { action: 'disable', labels: ['思考', '深度思考', '联网搜索'] },
+    ],
   }),
   qianwen: Object.freeze({
     label: 'Qwen',
@@ -53,6 +69,10 @@ const MODEL_ADAPTERS = Object.freeze({
     sendStrategy: 'qianwen',
     composerSelectors: ['div[role="textbox"]', 'div[contenteditable="true"]'],
     responseSelectors: ['.markdown-body', '[class*="markdown"]', '.message-content'],
+    modeControls: [
+      { action: 'select', labels: ['快速模式', '快速', '标准模式'] },
+      { action: 'disable', labels: ['思考', '深度思考', '研究', '联网搜索'] },
+    ],
   }),
   deepseek: Object.freeze({
     label: 'DeepSeek',
@@ -61,6 +81,10 @@ const MODEL_ADAPTERS = Object.freeze({
     sendStrategy: 'generic',
     composerSelectors: ['textarea', 'div[contenteditable="true"]'],
     responseSelectors: ['.ds-markdown', '.markdown-body', '[class*="markdown"]', '.md-body', '.message-content'],
+    modeControls: [
+      { action: 'select', labels: ['快速模式', '快速'] },
+      { action: 'disable', labels: ['深度思考', '智能搜索', '联网搜索'] },
+    ],
   }),
   doubao: Object.freeze({
     label: 'Doubao',
@@ -69,6 +93,10 @@ const MODEL_ADAPTERS = Object.freeze({
     sendStrategy: 'generic',
     composerSelectors: ['textarea', 'div[contenteditable="true"]'],
     responseSelectors: ['[class*="inner-item"]'],
+    modeControls: [
+      { action: 'select', labels: ['快速', '快速模式', '标准模式'] },
+      { action: 'disable', labels: ['深度思考', '思考', 'Agent', '智能体', '研究'] },
+    ],
   }),
   minimax: Object.freeze({
     label: 'Hailuo AI',
@@ -77,6 +105,10 @@ const MODEL_ADAPTERS = Object.freeze({
     sendStrategy: 'generic',
     composerSelectors: ['textarea', 'div[contenteditable="true"]'],
     responseSelectors: ['.markdown-body', '.message-content'],
+    modeControls: [
+      { action: 'select', labels: ['快速', '快速模式', '标准模式'] },
+      { action: 'disable', labels: ['Agent', '智能体', '思考', '深度思考', '调研报告'] },
+    ],
   }),
   kimi: Object.freeze({
     label: 'Kimi',
@@ -85,6 +117,9 @@ const MODEL_ADAPTERS = Object.freeze({
     sendStrategy: 'generic',
     composerSelectors: ['textarea', 'div[contenteditable="true"]'],
     responseSelectors: ['.markdown-body', '.kimi-markdown', '.message-content'],
+    modeControls: [
+      { action: 'disable', labels: ['Agent', '智能体', '深度研究', '深度思考', '思考'] },
+    ],
   }),
 });
 

@@ -679,6 +679,63 @@ function buildNewChatScript(modelId) {
 }
 
 // ===== 注入 Prompt 并自动发送的通用控制器 =====
+async function normalizeModelModes(modelId, targetView) {
+  const controls = MODEL_ADAPTERS[modelId]?.modeControls || [];
+  if (!targetView || targetView.webContents.isDestroyed() || controls.length === 0) return [];
+
+  const script = `(() => {
+    const controls = ${JSON.stringify(controls)};
+    const normalized = value => String(value || '').replace(/\\s+/g, ' ').trim().toLowerCase();
+    const visible = element => !!element && element.offsetParent !== null && !element.disabled;
+    const candidates = Array.from(document.querySelectorAll(
+      'button, [role="button"], [role="switch"], [role="checkbox"], input[type="checkbox"], input[type="radio"]'
+    )).filter(visible);
+    const labelOf = element => normalized([
+      element.getAttribute('aria-label'),
+      element.getAttribute('title'),
+      element.textContent,
+    ].filter(Boolean).join(' '));
+    const isSelected = element => {
+      if (element.matches('input[type="checkbox"], input[type="radio"]')) return element.checked;
+      if (element.getAttribute('aria-pressed') === 'true') return true;
+      if (element.getAttribute('aria-checked') === 'true') return true;
+      if (['on', 'checked', 'active', 'selected'].includes(element.getAttribute('data-state'))) return true;
+      const className = typeof element.className === 'string' ? element.className : '';
+      return /(^|[-_\\s])(active|selected|checked|enabled|primary)([-_\\s]|$)/i.test(className);
+    };
+    const results = [];
+
+    for (const control of controls) {
+      const labels = control.labels.map(normalized);
+      const element = candidates.find(candidate => {
+        const label = labelOf(candidate);
+        return labels.some(expected => label === expected || label.startsWith(expected + ' '));
+      });
+      if (!element) continue;
+
+      if (control.action === 'select') {
+        if (!isSelected(element)) {
+          element.click();
+          results.push({ action: 'selected', label: labelOf(element) });
+        }
+      } else if (control.action === 'disable' && isSelected(element)) {
+        element.click();
+        results.push({ action: 'disabled', label: labelOf(element) });
+      }
+    }
+    return results;
+  })();`;
+
+  try {
+    const results = await targetView.webContents.executeJavaScript(script);
+    if (results.length) await new Promise(resolve => setTimeout(resolve, 250));
+    return results;
+  } catch (error) {
+    console.warn(`无法调整 ${modelId} 的快速模式:`, error.message || error);
+    return [];
+  }
+}
+
 function injectPromptIntoModel(modelId, prompt, targetView) {
   const view = targetView || views[modelId];
   if (!view) return;
@@ -927,6 +984,7 @@ async function sendPromptWithRetry(modelId, prompt, targetView = views[modelId])
 
     publishModelHealth(modelId, 'ready', `正在发送（${attempt}/${maxAttempts}）`);
     try {
+      await normalizeModelModes(modelId, targetView);
       const injected = await Promise.race([
         injectPromptIntoModel(modelId, prompt, targetView),
         new Promise((_, reject) => setTimeout(() => reject(new Error('发送操作超时')), 12000)),
