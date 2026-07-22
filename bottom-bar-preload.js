@@ -9,4 +9,5 @@ contextBridge.exposeInMainWorld('bottomBar', {
   newChat: () => ipcRenderer.send('broadcast-new-chat'),
   // 一键汇总对话
   triggerSummary: () => ipcRenderer.send('broadcast-summary'),
+  onActiveModelCount: (callback) => ipcRenderer.on('active-model-count', (event, count) => callback(count)),
 });

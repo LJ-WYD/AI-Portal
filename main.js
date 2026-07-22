@@ -111,6 +111,9 @@ function relayout() {
   if (!mainWindow) return;
   const [w, h] = mainWindow.getContentSize();
   const visible = activeModels.filter(id => views[id]);
+  if (bottomBarView && !bottomBarView.webContents.isDestroyed()) {
+    bottomBarView.webContents.send('active-model-count', visible.length);
+  }
   const totalCount = visible.length;
   const needsPaging = totalCount > MAX_PER_PAGE;
 
@@ -245,6 +248,9 @@ function createBottomBar(winWidth, winHeight) {
   });
   bottomBarView.setBounds({ x: 0, y: winHeight - BOTTOM_HEIGHT, width: winWidth, height: BOTTOM_HEIGHT });
   mainWindow.addBrowserView(bottomBarView);
+  bottomBarView.webContents.on('did-finish-load', () => {
+    bottomBarView.webContents.send('active-model-count', activeModels.filter(id => views[id]).length);
+  });
   bottomBarView.webContents.loadFile('bottom-bar.html');
 }
 
@@ -359,26 +365,31 @@ function extractLatestResponseScript(modelId) {
   return `(() => {
     const selectors = ${JSON.stringify(modelSelectors)};
     const modelIdStr = ${JSON.stringify(modelId)};
-    const fallbacks = modelIdStr === 'chatgpt' ? [
-      '[data-message-author-role="assistant"] .markdown',
-      '[data-message-author-role="assistant"]',
-      '[data-testid*="conversation-turn"] .markdown'
-    ] : [
-      '.prose',
-      '[class*="prose"]',
-      '.ds-markdown',
-      '.markdown',
-      '.markdown-body',
-      '[class*="markdown"]',
-      '[class*="message-content"]',
-      '[class*="message_content"]',
-      'article',
-      '.message',
-      '.chat-message',
-      '.chat-content',
-      '[data-testid="message"]',
-      'div'
-    ];
+    const providerFallbacks = {
+      chatgpt: [
+        '[data-message-author-role="assistant"] .markdown',
+        '[data-message-author-role="assistant"]',
+        '[data-testid*="conversation-turn"] .markdown'
+      ],
+      claude: [
+        '[data-testid*="assistant"] .prose',
+        '[data-testid*="assistant"]',
+        'article'
+      ],
+      gemini: [
+        '[id^="model-response-message-content"]',
+        'model-response message-content',
+        'message-content'
+      ],
+      grok: [
+        '[data-testid*="assistant"] .prose',
+        '[data-testid*="assistant"]',
+        '.prose',
+        '.markdown',
+        'article'
+      ]
+    };
+    const fallbacks = providerFallbacks[modelIdStr] || [];
     
     // 递归查找所有节点（支持穿透 Shadow DOM 和同源 iframe）
     function findNodes(root, selector) {
@@ -393,28 +404,40 @@ function extractLatestResponseScript(modelId) {
         } catch (e) {}
       }
       
-      const children = Array.from(root.childNodes || []);
-      for (const child of children) {
-        results = results.concat(findNodes(child, selector));
-      }
-      
-      if (root.shadowRoot) {
-        results = results.concat(findNodes(root.shadowRoot, selector));
-      }
-      
-      if (root.tagName === 'IFRAME') {
-        try {
-          const doc = root.contentDocument || (root.contentWindow && root.contentWindow.document);
-          if (doc) {
-            results = results.concat(findNodes(doc, selector));
-          }
-        } catch (e) {}
+      const descendants = root.querySelectorAll ? Array.from(root.querySelectorAll('*')) : [];
+      if (root.shadowRoot) results = results.concat(findNodes(root.shadowRoot, selector));
+      for (const child of descendants) {
+        if (child.shadowRoot) results = results.concat(findNodes(child.shadowRoot, selector));
+        if (child.tagName === 'IFRAME') {
+          try {
+            const doc = child.contentDocument || (child.contentWindow && child.contentWindow.document);
+            if (doc) results = results.concat(findNodes(doc, selector));
+          } catch (e) {}
+        }
       }
       
       return results;
     }
     
     const allSelectors = [...selectors, ...fallbacks];
+
+    // Claude 当前版使用语义 article + 隐藏标题区分用户与助手消息，旧的 prose 类名已不稳定。
+    // 只接受明确标记为“Claude responded:”的文章，避免把用户消息或页面外壳误当回答。
+    if (modelIdStr === 'claude') {
+      const assistantArticles = Array.from(document.querySelectorAll('article, [role="article"]')).filter(article => {
+        const marker = article.querySelector('h1, h2, h3, [role="heading"], [aria-label^="Claude responded:"]');
+        const markerText = ((marker && (marker.innerText || marker.textContent || marker.getAttribute('aria-label'))) || '').trim();
+        return /^Claude responded:/i.test(markerText);
+      });
+      if (assistantArticles.length) {
+        const clone = assistantArticles[assistantArticles.length - 1].cloneNode(true);
+        clone.querySelectorAll('button, [role="toolbar"], h1, h2, h3, script, style').forEach(item => item.remove());
+        const claudeLines = (clone.innerText || clone.textContent || '').split(/\\r?\\n/)
+          .map(line => line.trim()).filter(Boolean);
+        const dedupedClaudeLines = claudeLines.filter((line, index) => index === 0 || line !== claudeLines[index - 1]);
+        if (dedupedClaudeLines.length) return dedupedClaudeLines.join('\\n');
+      }
+    }
     
     // 免责声明/配置小字/联网搜索折叠栏黑名单
     const blacklist = [
@@ -505,8 +528,8 @@ function extractLatestResponseScript(modelId) {
         return true;
       }
       
-      // ChatGPT 的助手消息可能是简短确认；其他模型仍保留 15 字符阈值以过滤图标和空容器。
-      const minimumLength = modelIdStr === 'chatgpt' ? 2 : 15;
+      // 短确认（如 OK）也是合法回答。依靠模型专用容器过滤 UI 噪声，而不是长度猜测。
+      const minimumLength = 2;
       if (len < minimumLength) {
         debugLogs.push({ sel, len, reason: 'too_short' });
         return true;
@@ -543,7 +566,7 @@ function extractLatestResponseScript(modelId) {
           content = clone.innerText || clone.textContent || '';
         } else {
           const clone = lastNode.cloneNode(true);
-          clone.querySelectorAll('script, style, noscript, template').forEach(item => item.remove());
+          clone.querySelectorAll('script, style, noscript, template, button, [role="toolbar"]').forEach(item => item.remove());
           content = clone.innerText || clone.textContent || '';
         }
         if (content.trim()) {
@@ -563,7 +586,10 @@ function extractLatestResponseScript(modelId) {
       return "DEBUG_INFO: " + (summaryLogs || 'No elements found');
     }
     
-    return content.trim();
+    const lines = content.split(/\\r?\\n/).map(line => line.trim()).filter(Boolean);
+    if (modelIdStr === 'claude' && lines.length > 1 && /^claude responded:/i.test(lines[0])) lines.shift();
+    const deduped = lines.filter((line, index) => index === 0 || line !== lines[index - 1]);
+    return deduped.join('\\n').trim();
   })();`;
 }
 
@@ -685,17 +711,37 @@ function injectPromptIntoModel(modelId, prompt, targetView) {
     sendWhenReady();
   });`;
 
-  const claudeScript = `(() => {
+  const claudeScript = `new Promise((resolve) => {
     const ed = document.querySelector('[contenteditable="true"]');
-    if (!ed) return;
+    if (!ed) { resolve(false); return; }
     ed.focus();
     ed.innerHTML = '<p>' + ${JSON.stringify(prompt)} + '</p>';
     ed.dispatchEvent(new Event('input', { bubbles: true }));
-    setTimeout(() => {
-      const btn = document.querySelector('button[aria-label="Send Message"], button[aria-label="Send message"]');
-      if (btn) btn.click();
-    }, 200);
-  })();`;
+    let attempts = 0;
+    const clickSend = () => {
+      const btn = document.querySelector('button[aria-label="Send Message"], button[aria-label="Send message"]')
+        || document.querySelector('button[type="submit"]')
+        || document.querySelector('button[data-testid*="send" i]')
+        || Array.from(document.querySelectorAll('button')).find(button => {
+          const label = (button.getAttribute('aria-label') || '') + ' ' + (button.textContent || '');
+          return /send message/i.test(label) && button.offsetParent !== null;
+        })
+        || (() => {
+          const container = ed.closest('form') || ed.parentElement?.parentElement || ed.parentElement;
+          const localButtons = container ? Array.from(container.querySelectorAll('button')) : [];
+          return localButtons.reverse().find(button => button.offsetParent !== null && !button.disabled);
+        })();
+      if (btn && !btn.disabled) { btn.click(); resolve(true); return; }
+      if (++attempts < 20) setTimeout(clickSend, 200);
+      else {
+        ed.dispatchEvent(new KeyboardEvent('keydown', {
+          key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true
+        }));
+        resolve(true);
+      }
+    };
+    setTimeout(clickSend, 200);
+  });`;
 
   const geminiScript = `new Promise((resolve) => {
     const promptText = ${JSON.stringify(prompt)};
@@ -808,10 +854,12 @@ function injectPromptIntoModel(modelId, prompt, targetView) {
     editor.dispatchEvent(new InputEvent('input', { bubbles: true, cancelable: true, inputType: 'insertText', data: ${JSON.stringify(prompt)} }));
     
     setTimeout(() => {
-      let btn = null;
+      let btn = document.querySelector('button[aria-label="提交"]')
+        || document.querySelector('button[aria-label="Submit"]')
+        || document.querySelector('form button[type="submit"]');
       let container = editor.parentElement;
       
-      for (let i = 0; i < 6 && container; i++) {
+      for (let i = 0; !btn && i < 6 && container; i++) {
         const localBtns = Array.from(container.querySelectorAll('button'));
         if (localBtns.length > 0) {
           const filtered = localBtns.filter(b => {
@@ -1397,6 +1445,7 @@ function fetchAndSendSummaryData(modelIds) {
 }
 
 ipcMain.on('broadcast-summary', (event) => {
+  if (activeModels.filter(id => views[id]).length < 2) return;
   if (!isSummaryVisible) {
     // 侧边栏未打开，此时打开侧边栏，不立即抓取（等待侧边栏就绪发来 summary-ready 信号后再拉取）
     showSummary();
@@ -1621,12 +1670,17 @@ async function startSummaryTask(targetModelId, prompt) {
     } else {
       await summaryTaskView.webContents.loadURL(AI_CONFIGS[targetModelId].url);
       await hideTaskSidebar(targetModelId, summaryTaskView);
-      await waitForTaskComposer(targetModelId, summaryTaskView);
+      const composerReady = await waitForTaskComposer(targetModelId, summaryTaskView);
+      if (!composerReady) throw new Error(`${AI_CONFIGS[targetModelId].label} 输入框尚未就绪`);
     }
     if (targetModelId !== 'chatgpt') {
       await delay(500);
-      summaryTaskView.webContents.executeJavaScript(buildNewChatScript(targetModelId)).catch(() => {});
-      await delay(900);
+      await summaryTaskView.webContents.executeJavaScript(buildNewChatScript(targetModelId)).catch(() => {});
+      // “新建会话”可能触发站内路由跳转或整页导航。必须重新等待新的
+      // composer，而不能复用预加载阶段已经失效的 DOM 节点。
+      await delay(500);
+      const freshComposerReady = await waitForTaskComposer(targetModelId, summaryTaskView);
+      if (!freshComposerReady) throw new Error(`${AI_CONFIGS[targetModelId].label} 新会话输入框尚未就绪`);
     }
     sendSummaryTaskUpdate({ status: 'sending', message: `正在发送至 ${AI_CONFIGS[targetModelId].label}…` });
     const sendResult = await sendPromptWithRetry(targetModelId, prompt, summaryTaskView);

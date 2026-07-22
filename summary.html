@@ -318,8 +318,8 @@
     // 所有 AI 的展示名称映射
     const AI_LABELS = {
       chatgpt: 'ChatGPT', claude: 'Claude', gemini: 'Gemini', grok: 'Grok',
-      glm: '智谱清言', qianwen: '通义千问', deepseek: 'DeepSeek', doubao: '豆包',
-      minimax: '海螺 AI', kimi: 'Kimi'
+      glm: 'Zhipu AI', qianwen: 'Qwen', deepseek: 'DeepSeek', doubao: 'Doubao',
+      minimax: 'Hailuo AI', kimi: 'Kimi'
     };
 
     // 监听主进程发来的多模型文本数据
@@ -347,7 +347,9 @@
         opt.textContent = AI_LABELS[mId] || mId;
         select.appendChild(opt);
       });
-      if (select.value) window.summaryPanel.prepareSummaryModel(select.value);
+      if (select.value) {
+        window.summaryPanel.prepareSummaryModel(select.value);
+      }
 
       // 2. 渲染各模型回答的卡片
       const list = document.getElementById('cards-list');
@@ -376,6 +378,7 @@
         includeLabel.className = 'include-toggle';
         const includeCheckbox = document.createElement('input');
         includeCheckbox.type = 'checkbox';
+        includeCheckbox.dataset.modelId = mId;
         includeCheckbox.checked = selectedSummaryModels.has(mId);
         includeCheckbox.addEventListener('change', () => {
           if (includeCheckbox.checked && selectedSummaryModels.size >= MAX_SUMMARY_MODELS) {
@@ -450,7 +453,8 @@
     });
 
     document.getElementById('model-select').addEventListener('change', (event) => {
-      window.summaryPanel.prepareSummaryModel(event.target.value);
+      const targetModelId = event.target.value;
+      window.summaryPanel.prepareSummaryModel(targetModelId);
     });
 
     document.getElementById('start-summary-btn').addEventListener('click', () => {
@@ -458,10 +462,16 @@
       const targetModelId = select.value;
       if (!targetModelId) return;
 
+      const sourceModelIds = [...selectedSummaryModels].filter(mId => Boolean(cachedData[mId]?.trim()));
+      if (sourceModelIds.length < 2) {
+        alert('请至少选择两份完整的模型回答，再开始综合提炼。');
+        return;
+      }
+
       // 保留每个模型的首尾信息，避免多模型长回答一次性注入时超过目标网页的稳定处理范围。
       const MAX_CHARS_PER_MODEL = 3600;
       let textBlock = '';
-      [...selectedSummaryModels].forEach(mId => {
+      sourceModelIds.forEach(mId => {
         const val = cachedData[mId];
         if (!val) return;
 

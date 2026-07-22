@@ -162,6 +162,11 @@
       transform: translateY(1px);
       box-shadow: none;
     }
+    #summary-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
     @media (prefers-color-scheme: dark) {
       :root { --bg: #20201f; --input-bg: #2a2a29; --primary: #d4d4d8; --text: #f4f4f5; --muted: #a1a1aa; --border: #454543; }
       body { background: #20201f; }
@@ -200,7 +205,15 @@
     document.getElementById('new-chat-btn').addEventListener('click', () => {
       window.bottomBar.newChat();
     });
-    document.getElementById('summary-btn').addEventListener('click', () => {
+    const summaryBtn = document.getElementById('summary-btn');
+    summaryBtn.disabled = true;
+    summaryBtn.title = '至少勾选两个模型后才能汇总';
+    window.bottomBar.onActiveModelCount((count) => {
+      summaryBtn.disabled = count < 2;
+      summaryBtn.title = count < 2 ? '至少勾选两个模型后才能汇总' : '汇总已选模型的回答';
+    });
+    summaryBtn.addEventListener('click', () => {
+      if (summaryBtn.disabled) return;
       window.bottomBar.triggerSummary();
     });
     document.getElementById('prompt-input').addEventListener('keydown', e => {

@@ -19,8 +19,8 @@ const MODEL_ADAPTERS = Object.freeze({
     url: 'https://claude.ai',
     newChatUrl: 'https://claude.ai/new',
     sendStrategy: 'claude',
-    composerSelectors: ['[contenteditable="true"]'],
-    responseSelectors: ['.prose', '[class*="prose"]', 'div[class*="font-claude-message"]', '[class*="font-claude-message"]', '.font-claude-message'],
+    composerSelectors: ['[aria-label="Write your prompt to Claude"]', '[role="textbox"][contenteditable="true"]', '[contenteditable="true"]'],
+    responseSelectors: ['[data-testid*="assistant"] .prose', '[data-testid*="assistant"]', '[role="article"]', '.font-claude-message', '[class*="font-claude-message"]', '.prose'],
   }),
   gemini: Object.freeze({
     label: 'Gemini',
@@ -28,7 +28,7 @@ const MODEL_ADAPTERS = Object.freeze({
     newChatUrl: 'https://gemini.google.com/app',
     sendStrategy: 'gemini',
     composerSelectors: ['rich-textarea [contenteditable="true"]', 'div[role="textbox"][contenteditable="true"]', 'div[role="textbox"]'],
-    responseSelectors: ['message-content .message-content', 'message-content', '.message-content'],
+    responseSelectors: ['[id^="model-response-message-content"]', 'model-response message-content', 'message-content .message-content', 'message-content', '.message-content'],
   }),
   grok: Object.freeze({
     label: 'Grok',
@@ -39,7 +39,7 @@ const MODEL_ADAPTERS = Object.freeze({
     responseSelectors: ['.prose', '.markdown', '[class*="message"] .markdown', 'article'],
   }),
   glm: Object.freeze({
-    label: '智谱',
+    label: 'Zhipu AI',
     url: 'https://chatglm.cn',
     newChatUrl: 'https://chatglm.cn/',
     sendStrategy: 'generic',
@@ -47,7 +47,7 @@ const MODEL_ADAPTERS = Object.freeze({
     responseSelectors: ['.markdown-body', '.message-content'],
   }),
   qianwen: Object.freeze({
-    label: '千问',
+    label: 'Qwen',
     url: 'https://www.qianwen.com/',
     newChatUrl: 'https://www.qianwen.com/',
     sendStrategy: 'qianwen',
@@ -63,7 +63,7 @@ const MODEL_ADAPTERS = Object.freeze({
     responseSelectors: ['.ds-markdown', '.markdown-body', '[class*="markdown"]', '.md-body', '.message-content'],
   }),
   doubao: Object.freeze({
-    label: '豆包',
+    label: 'Doubao',
     url: 'https://www.doubao.com',
     newChatUrl: 'https://www.doubao.com/',
     sendStrategy: 'generic',
@@ -71,7 +71,7 @@ const MODEL_ADAPTERS = Object.freeze({
     responseSelectors: ['[class*="inner-item"]'],
   }),
   minimax: Object.freeze({
-    label: '海螺',
+    label: 'Hailuo AI',
     url: 'https://www.hailuo.ai',
     newChatUrl: 'https://www.hailuo.ai/',
     sendStrategy: 'generic',
